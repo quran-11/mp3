@@ -1,10 +1,45 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Quran Player - Smart Mode</title>
   <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      min-height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+      padding-top: 20px;
+      background-color: #f4f4f4;
+      text-align: center;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .controls-row label {
+      font-weight: bold;
+    }
+
+    .controls-row input {
+      width: 60px;
+    }
+
+    input, button {
+      margin: 5px;
+      padding: 5px 10px;
+      font-size: 16px;
+    }
+
     img {
       max-width: 100%;
       height: auto;
@@ -17,14 +52,16 @@
 <body>
   <h2>Quran Page Player (604 Pages)</h2>
 
-  <label for="start-page">Start from page (1–604):</label>
-  <input type="number" id="start-page" value="1" min="1" max="604"><br><br>
+  <div class="controls-row">
+    <label for="start-page">Start from page (1–604):</label>
+    <input type="number" id="start-page" value="1" min="1" max="604">
 
-  <label for="interval">Time between plays (in minutes):</label>
-  <input type="number" id="interval" value="3" min="3"><br><br>
+    <label for="interval">Delay (min):</label>
+    <input type="number" id="interval" value="6" min="1">
 
-  <label for="repeat-count">Repeat each page how many times:</label>
-  <input type="number" id="repeat-count" value="1" min="1"><br><br>
+    <label for="repeat-count">Repeats:</label>
+    <input type="number" id="repeat-count" value="1" min="1">
+  </div>
 
   <button onclick="startPlayer()">Start</button>
   <button onclick="togglePause()" id="pause-btn" disabled>Pause</button>
@@ -56,7 +93,6 @@
     let useAudioEndMode = false;
     let totalSecondsPlayed = 0;
 
-    // -------- Cookies --------
     function setCookie(name, value, days) {
       const d = new Date();
       d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
@@ -87,7 +123,6 @@
       }
     }
 
-    // -------- Time formatting --------
     function pad(num) {
       return num.toString().padStart(2, '0');
     }
@@ -103,7 +138,6 @@
       return `${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
-    // -------- Countdown + Timer --------
     function updateCountdown() {
       if (!isPaused && !useAudioEndMode) {
         if (timeLeft > 0) {
@@ -124,7 +158,6 @@
       }
     }
 
-    // -------- Page and Audio Playback --------
     function playPage() {
       const pageStr = pad3(page);
       const audioUrl = 'https://ia801409.us.archive.org/27/items/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/' + pageStr + '.mp3';
@@ -200,17 +233,14 @@
       }
     }
 
-    // -------- Navigation while Paused --------
     pageImage.addEventListener('mousedown', (e) => {
       if (!isPaused) return;
       e.preventDefault();
 
       if (e.button === 0) {
-        // Left click: next page
-        page = (page % 604) + 1;
+        page = (page % 604) + 1; // next
       } else if (e.button === 2) {
-        // Right click: previous page
-        page = (page - 2 + 604) % 604 + 1;
+        page = (page - 2 + 604) % 604 + 1; // previous
       }
 
       currentRepeat = 0;
@@ -219,7 +249,6 @@
 
     pageImage.addEventListener('contextmenu', e => e.preventDefault());
 
-    // -------- On Page Load --------
     window.onload = function () {
       loadPageFromCookie();
     };
