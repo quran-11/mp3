@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,6 +31,7 @@
 
   <p id="status">Status: Not started</p>
   <p id="countdown">Next play in: --:--</p>
+  <p id="total-time">Total play time: 00:00:00</p>
 
   <audio id="quran-audio" controls></audio><br>
   <img id="page-image" alt="Quran Page" src="">
@@ -38,6 +40,7 @@
     const audio = document.getElementById('quran-audio');
     const status = document.getElementById('status');
     const countdown = document.getElementById('countdown');
+    const totalTimeDisplay = document.getElementById('total-time');
     const pageImage = document.getElementById('page-image');
     const pauseBtn = document.getElementById('pause-btn');
 
@@ -47,20 +50,60 @@
     let currentRepeat = 0;
     let nextPlayTimer;
     let countdownTimer;
+    let totalTimeTimer;
     let timeLeft = 0;
     let isPaused = false;
     let useAudioEndMode = false;
+    let totalSecondsPlayed = 0;
 
+    // -------- Cookies --------
+    function setCookie(name, value, days) {
+      const d = new Date();
+      d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+      const expires = "expires=" + d.toUTCString();
+      document.cookie = name + "=" + value + ";" + expires + ";path=/";
+    }
+
+    function getCookie(name) {
+      const cname = name + "=";
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const ca = decodedCookie.split(';');
+      for (let c of ca) {
+        while (c.charAt(0) === ' ') c = c.substring(1);
+        if (c.indexOf(cname) === 0) return c.substring(cname.length, c.length);
+      }
+      return "";
+    }
+
+    function savePageToCookie() {
+      setCookie("quran_page", page, 30);
+    }
+
+    function loadPageFromCookie() {
+      const storedPage = parseInt(getCookie("quran_page"));
+      if (!isNaN(storedPage) && storedPage >= 1 && storedPage <= 604) {
+        page = storedPage;
+        document.getElementById('start-page').value = storedPage;
+      }
+    }
+
+    // -------- Time formatting --------
     function pad(num) {
+      return num.toString().padStart(2, '0');
+    }
+
+    function pad3(num) {
       return num.toString().padStart(3, '0');
     }
 
     function formatTime(seconds) {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
+    // -------- Countdown + Timer --------
     function updateCountdown() {
       if (!isPaused && !useAudioEndMode) {
         if (timeLeft > 0) {
@@ -74,8 +117,16 @@
       }
     }
 
+    function updateTotalTime() {
+      if (!isPaused && !audio.paused) {
+        totalSecondsPlayed++;
+        totalTimeDisplay.textContent = "Total play time: " + formatTime(totalSecondsPlayed);
+      }
+    }
+
+    // -------- Page and Audio Playback --------
     function playPage() {
-      const pageStr = pad(page);
+      const pageStr = pad3(page);
       const audioUrl = 'https://ia801409.us.archive.org/27/items/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/' + pageStr + '.mp3';
       const imageUrl = 'https://ia801504.us.archive.org/24/items/606_20250214/' + pageStr + '.png';
 
@@ -89,6 +140,7 @@
       pageImage.src = imageUrl;
       pageImage.alt = `Quran Page ${page}`;
       status.textContent = `Status: Playing page ${page}, repetition ${currentRepeat + 1} of ${repeatCount}`;
+      savePageToCookie();
 
       if (useAudioEndMode && !isPaused) {
         audio.onended = () => {
@@ -112,6 +164,7 @@
     function startPlayer() {
       clearInterval(nextPlayTimer);
       clearInterval(countdownTimer);
+      clearInterval(totalTimeTimer);
       audio.onended = null;
 
       page = parseInt(document.getElementById('start-page').value) || 1;
@@ -122,10 +175,13 @@
       pauseBtn.disabled = false;
       pauseBtn.textContent = "Pause";
       useAudioEndMode = intervalMinutes === 3;
+      totalSecondsPlayed = 0;
+      totalTimeDisplay.textContent = "Total play time: 00:00:00";
 
       playPage();
 
       countdownTimer = setInterval(updateCountdown, 1000);
+      totalTimeTimer = setInterval(updateTotalTime, 1000);
 
       if (!useAudioEndMode) {
         timeLeft = intervalMinutes * 60;
@@ -144,7 +200,7 @@
       }
     }
 
-    // ✅ Image click navigation while paused
+    // -------- Navigation while Paused --------
     pageImage.addEventListener('mousedown', (e) => {
       if (!isPaused) return;
       e.preventDefault();
@@ -161,8 +217,12 @@
       playPage();
     });
 
-    // Prevent right-click context menu on image
     pageImage.addEventListener('contextmenu', e => e.preventDefault());
+
+    // -------- On Page Load --------
+    window.onload = function () {
+      loadPageFromCookie();
+    };
   </script>
 </body>
 </html>
