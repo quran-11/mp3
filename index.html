@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Quran Page Player with Countdown, Image, and Pause</title>
+  <title>Quran Player - Smart Mode</title>
   <style>
     img {
       max-width: 100%;
       height: auto;
       border: 2px solid #444;
       margin-top: 10px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -19,7 +20,7 @@
   <input type="number" id="start-page" value="1" min="1" max="604"><br><br>
 
   <label for="interval">Time between plays (in minutes):</label>
-  <input type="number" id="interval" value="6" min="3"><br><br>
+  <input type="number" id="interval" value="6" min="1"><br><br>
 
   <label for="repeat-count">Repeat each page how many times:</label>
   <input type="number" id="repeat-count" value="1" min="1"><br><br>
@@ -42,12 +43,13 @@
 
     let page = 1;
     let intervalMinutes = 6;
-    let repeatCount = 3;
+    let repeatCount = 1;
     let currentRepeat = 0;
     let nextPlayTimer;
     let countdownTimer;
     let timeLeft = 0;
     let isPaused = false;
+    let useAudioEndMode = false;
 
     function pad(num) {
       return num.toString().padStart(3, '0');
@@ -60,43 +62,57 @@
     }
 
     function updateCountdown() {
-      if (!isPaused) {
+      if (!isPaused && !useAudioEndMode) {
         if (timeLeft > 0) {
           timeLeft--;
         }
         countdown.textContent = "Next play in: " + formatTime(timeLeft);
+      } else if (useAudioEndMode) {
+        countdown.textContent = "Next play after audio ends";
+      } else {
+        countdown.textContent = "--:--";
       }
     }
 
     function playPage() {
-      if (isPaused) return;
-
       const pageStr = pad(page);
-       const audioUrl = 'https://ia801409.us.archive.org/27/items/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/' + pageStr + '.mp3'; // Replace with actual audio URL
-      const imageUrl = 'https://ia801504.us.archive.org/24/items/606_20250214/' + pageStr + '.png'; // Replace with actual image URL
-
+      const audioUrl = 'https://ia801409.us.archive.org/27/items/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/' + pageStr + '.mp3';
+      const imageUrl = 'https://ia801504.us.archive.org/24/items/606_20250214/' + pageStr + '.png';
 
       audio.src = audioUrl;
-      audio.play();
+      audio.load();
+
+      if (!isPaused) {
+        audio.play();
+      }
 
       pageImage.src = imageUrl;
       pageImage.alt = `Quran Page ${page}`;
-
       status.textContent = `Status: Playing page ${page}, repetition ${currentRepeat + 1} of ${repeatCount}`;
-      currentRepeat++;
 
-      if (currentRepeat >= repeatCount) {
-        page++;
-        if (page > 604) page = 1;
-        currentRepeat = 0;
+      if (useAudioEndMode && !isPaused) {
+        audio.onended = () => {
+          currentRepeat++;
+          if (currentRepeat >= repeatCount) {
+            page = (page % 604) + 1;
+            currentRepeat = 0;
+          }
+          playPage();
+        };
+      } else if (!useAudioEndMode) {
+        currentRepeat++;
+        if (currentRepeat >= repeatCount) {
+          page = (page % 604) + 1;
+          currentRepeat = 0;
+        }
+        timeLeft = intervalMinutes * 60;
       }
-
-      timeLeft = intervalMinutes * 60;
     }
 
     function startPlayer() {
       clearInterval(nextPlayTimer);
       clearInterval(countdownTimer);
+      audio.onended = null;
 
       page = parseInt(document.getElementById('start-page').value) || 1;
       intervalMinutes = parseInt(document.getElementById('interval').value) || 6;
@@ -105,11 +121,16 @@
       isPaused = false;
       pauseBtn.disabled = false;
       pauseBtn.textContent = "Pause";
+      useAudioEndMode = intervalMinutes === 3;
 
-      playPage(); // Play first page
-      timeLeft = intervalMinutes * 60;
+      playPage();
+
       countdownTimer = setInterval(updateCountdown, 1000);
-      nextPlayTimer = setInterval(playPage, intervalMinutes * 60 * 1000);
+
+      if (!useAudioEndMode) {
+        timeLeft = intervalMinutes * 60;
+        nextPlayTimer = setInterval(playPage, intervalMinutes * 60 * 1000);
+      }
     }
 
     function togglePause() {
@@ -122,6 +143,26 @@
         audio.play();
       }
     }
+
+    // ✅ Image click navigation while paused
+    pageImage.addEventListener('mousedown', (e) => {
+      if (!isPaused) return;
+      e.preventDefault();
+
+      if (e.button === 0) {
+        // Left click: next page
+        page = (page % 604) + 1;
+      } else if (e.button === 2) {
+        // Right click: previous page
+        page = (page - 2 + 604) % 604 + 1;
+      }
+
+      currentRepeat = 0;
+      playPage();
+    });
+
+    // Prevent right-click context menu on image
+    pageImage.addEventListener('contextmenu', e => e.preventDefault());
   </script>
 </body>
 </html>
