@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quran Page Player with Countdown, Image, and Pause</title>
+  <style>
+    img {
+      max-width: 100%;
+      height: auto;
+      border: 2px solid #444;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Quran Page Player (604 Pages)</h2>
+
+  <label for="start-page">Start from page (1–604):</label>
+  <input type="number" id="start-page" value="1" min="1" max="604"><br><br>
+
+  <label for="interval">Time between plays (in minutes):</label>
+  <input type="number" id="interval" value="10" min="1"><br><br>
+
+  <label for="repeat-count">Repeat each page how many times:</label>
+  <input type="number" id="repeat-count" value="1" min="1"><br><br>
+
+  <button onclick="startPlayer()">Start</button>
+  <button onclick="togglePause()" id="pause-btn" disabled>Pause</button>
+
+  <p id="status">Status: Not started</p>
+  <p id="countdown">Next play in: --:--</p>
+
+  <audio id="quran-audio" controls></audio><br>
+  <img id="page-image" alt="Quran Page" src="">
+
+  <script>
+    const audio = document.getElementById('quran-audio');
+    const status = document.getElementById('status');
+    const countdown = document.getElementById('countdown');
+    const pageImage = document.getElementById('page-image');
+    const pauseBtn = document.getElementById('pause-btn');
+
+    let page = 1;
+    let intervalMinutes = 10;
+    let repeatCount = 1;
+    let currentRepeat = 0;
+    let nextPlayTimer;
+    let countdownTimer;
+    let timeLeft = 0;
+    let isPaused = false;
+
+    function pad(num) {
+      return num.toString().padStart(3, '0');
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateCountdown() {
+      if (!isPaused) {
+        if (timeLeft > 0) {
+          timeLeft--;
+        }
+        countdown.textContent = "Next play in: " + formatTime(timeLeft);
+      }
+    }
+
+    function playPage() {
+      if (isPaused) return;
+
+      const pageStr = pad(page);
+      const audioUrl = 'https://example.com/quran/audio/' + pageStr + '.mp3'; // Replace with actual audio URL
+      const imageUrl = 'https://example.com/quran/images/' + pageStr + '.jpg'; // Replace with actual image URL
+
+      audio.src = audioUrl;
+      audio.play();
+
+      pageImage.src = imageUrl;
+      pageImage.alt = `Quran Page ${page}`;
+
+      status.textContent = `Status: Playing page ${page}, repetition ${currentRepeat + 1} of ${repeatCount}`;
+      currentRepeat++;
+
+      if (currentRepeat >= repeatCount) {
+        page++;
+        if (page > 604) page = 1;
+        currentRepeat = 0;
+      }
+
+      timeLeft = intervalMinutes * 60;
+    }
+
+    function startPlayer() {
+      clearInterval(nextPlayTimer);
+      clearInterval(countdownTimer);
+
+      page = parseInt(document.getElementById('start-page').value) || 1;
+      intervalMinutes = parseInt(document.getElementById('interval').value) || 10;
+      repeatCount = parseInt(document.getElementById('repeat-count').value) || 1;
+      currentRepeat = 0;
+      isPaused = false;
+      pauseBtn.disabled = false;
+      pauseBtn.textContent = "Pause";
+
+      playPage(); // Play first page
+      timeLeft = intervalMinutes * 60;
+      countdownTimer = setInterval(updateCountdown, 1000);
+      nextPlayTimer = setInterval(playPage, intervalMinutes * 60 * 1000);
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      pauseBtn.textContent = isPaused ? "Resume" : "Pause";
+
+      if (isPaused) {
+        audio.pause();
+      } else {
+        audio.play();
+      }
+    }
+  </script>
+</body>
+</html>
