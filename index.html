@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Quran Player - Smart Mode</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta charset="UTF-8" />
+  <title>Quran Player - Multi Reciters</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
       display: flex;
@@ -31,6 +30,7 @@
       gap: 8px;
       justify-content: center;
       margin-bottom: 10px;
+      align-items: center;
     }
 
     .controls-row label {
@@ -38,10 +38,13 @@
       font-size: 1em;
     }
 
-    .controls-row input {
-      width: 70px;
+    .controls-row input,
+    .controls-row select {
+      width: 90px;
       padding: 5px;
       font-size: 1em;
+      border-radius: 4px;
+      border: 1px solid #888;
     }
 
     .button-row {
@@ -52,7 +55,9 @@
       flex-wrap: wrap;
     }
 
-    input, button {
+    input,
+    select,
+    button {
       font-size: 1em;
       padding: 10px 15px;
       border: 1px solid #888;
@@ -62,10 +67,12 @@
     button {
       background-color: #007BFF;
       color: white;
+      cursor: pointer;
     }
 
     button:disabled {
       background-color: #ccc;
+      cursor: default;
     }
 
     p {
@@ -89,17 +96,26 @@
   </style>
 </head>
 <body>
-  <h2>Quran Page Player (604 Pages)</h2>
+  <h2>Quran Page Player (604 Pages) - Multi Reciters</h2>
 
   <div class="controls-row">
+    <label for="reciter-select">Reciter:</label>
+    <select id="reciter-select">
+      <option value="hussary">AL hussary</option>
+      <option value="naser">naser-alqattami</option>
+      <option value="afasy">Mishary Alafasy</option>
+      <option value="minshawi">Al-Minshawi </option>
+      <option value="mustafa">Mustafa Ismael</option>
+    </select>
+
     <label for="start-page">Page:</label>
-    <input type="number" id="start-page" value="1" min="1" max="604">
+    <input type="number" id="start-page" value="1" min="1" max="604" />
 
     <label for="interval">Delay (min):</label>
-    <input type="number" id="interval" value="4" min="3">
+    <input type="number" id="interval" value="6" min="3" />
 
     <label for="repeat-count">Repeats:</label>
-    <input type="number" id="repeat-count" value="1" min="1">
+    <input type="number" id="repeat-count" value="1" min="1" />
   </div>
 
   <div class="button-row">
@@ -111,16 +127,17 @@
   <p id="countdown">Next play in: --:--</p>
   <p id="total-time">Total play time: 00:00:00</p>
 
-  <audio id="quran-audio" controls></audio><br>
-  <img id="page-image" alt="Quran Page" src="">
+  <audio id="quran-audio" controls></audio><br />
+  <img id="page-image" alt="Quran Page" src="" />
 
   <script>
-    const audio = document.getElementById('quran-audio');
-    const status = document.getElementById('status');
-    const countdown = document.getElementById('countdown');
-    const totalTimeDisplay = document.getElementById('total-time');
-    const pageImage = document.getElementById('page-image');
-    const pauseBtn = document.getElementById('pause-btn');
+    const audio = document.getElementById("quran-audio");
+    const status = document.getElementById("status");
+    const countdown = document.getElementById("countdown");
+    const totalTimeDisplay = document.getElementById("total-time");
+    const pageImage = document.getElementById("page-image");
+    const pauseBtn = document.getElementById("pause-btn");
+    const reciterSelect = document.getElementById("reciter-select");
 
     let page = 1;
     let intervalMinutes = 6;
@@ -134,9 +151,23 @@
     let useAudioEndMode = false;
     let totalSecondsPlayed = 0;
 
+    // Base URLs for each reciter
+    const reciters = {
+     hussary:
+        "https://ia600203.us.archive.org/11/items/alhosari-_-___---moRATTAL----32--------kb----mp3------quran---safa7at-----604-/Page",
+           naser:
+        "https://ia802901.us.archive.org/16/items/604___part-quran-128kb-high-quality-604-part-by-naser-alqattami--mp3/",
+      afasy:
+        "https://ia801605.us.archive.org/3/items/quran__by--mashary-al3afasy---128-kb----604-part-full-quran-604-page--safahat-/Page",
+      minshawi:
+        "https://ia801603.us.archive.org/0/items/quran___by--alminshawi-mogawwad-192-kb----604-part-full-quran-604-page--safaha/Page",
+      mustafa:
+        "https://ia801409.us.archive.org/27/items/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/"
+    };
+
     function setCookie(name, value, days) {
       const d = new Date();
-      d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+      d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
       const expires = "expires=" + d.toUTCString();
       document.cookie = name + "=" + value + ";" + expires + ";path=/";
     }
@@ -144,9 +175,9 @@
     function getCookie(name) {
       const cname = name + "=";
       const decodedCookie = decodeURIComponent(document.cookie);
-      const ca = decodedCookie.split(';');
+      const ca = decodedCookie.split(";");
       for (let c of ca) {
-        while (c.charAt(0) === ' ') c = c.substring(1);
+        while (c.charAt(0) === " ") c = c.substring(1);
         if (c.indexOf(cname) === 0) return c.substring(cname.length, c.length);
       }
       return "";
@@ -154,22 +185,27 @@
 
     function savePageToCookie() {
       setCookie("quran_page", page, 30);
+      setCookie("quran_reciter", reciterSelect.value, 30);
     }
 
     function loadPageFromCookie() {
       const storedPage = parseInt(getCookie("quran_page"));
+      const storedReciter = getCookie("quran_reciter");
       if (!isNaN(storedPage) && storedPage >= 1 && storedPage <= 604) {
         page = storedPage;
-        document.getElementById('start-page').value = storedPage;
+        document.getElementById("start-page").value = storedPage;
+      }
+      if (storedReciter && reciters.hasOwnProperty(storedReciter)) {
+        reciterSelect.value = storedReciter;
       }
     }
 
     function pad(num) {
-      return num.toString().padStart(2, '0');
+      return num.toString().padStart(2, "0");
     }
 
     function pad3(num) {
-      return num.toString().padStart(3, '0');
+      return num.toString().padStart(3, "0");
     }
 
     function formatTime(seconds) {
@@ -201,8 +237,18 @@
 
     function playPage() {
       const pageStr = pad3(page);
-      const audioUrl = 'https://ia801409.us.archive.org/27/items/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/' + pageStr + '.mp3';
-      const imageUrl = 'https://ia801504.us.archive.org/24/items/606_20250214/' + pageStr + '.png';
+      const reciter = reciterSelect.value;
+      let audioUrl;
+
+      if (reciter === "mustafa") {
+        audioUrl = reciters[reciter] + pageStr + ".mp3";
+      } else {
+        // For others, files are named like 001.mp3, 002.mp3 etc
+        audioUrl = reciters[reciter] + pageStr + ".mp3";
+      }
+
+      const imageUrl =
+        "https://ia801504.us.archive.org/24/items/606_20250214/" + pageStr + ".png";
 
       audio.src = audioUrl;
       audio.load();
@@ -213,7 +259,7 @@
 
       pageImage.src = imageUrl;
       pageImage.alt = `Quran Page ${page}`;
-      status.textContent = `Status: Playing page ${page}, repetition ${currentRepeat + 1} of ${repeatCount}`;
+      status.textContent = `Status: Playing page ${page}, repetition ${currentRepeat + 1} of ${repeatCount}, Reciter: ${reciterSelect.options[reciterSelect.selectedIndex].text}`;
       savePageToCookie();
 
       if (useAudioEndMode && !isPaused) {
@@ -241,9 +287,9 @@
       clearInterval(totalTimeTimer);
       audio.onended = null;
 
-      page = parseInt(document.getElementById('start-page').value) || 1;
-      intervalMinutes = parseInt(document.getElementById('interval').value) || 6;
-      repeatCount = parseInt(document.getElementById('repeat-count').value) || 1;
+      page = parseInt(document.getElementById("start-page").value) || 1;
+      intervalMinutes = parseInt(document.getElementById("interval").value) || 6;
+      repeatCount = parseInt(document.getElementById("repeat-count").value) || 1;
       currentRepeat = 0;
       isPaused = false;
       pauseBtn.disabled = false;
@@ -272,13 +318,15 @@
       }
     }
 
-    pageImage.addEventListener('mousedown', (e) => {
+    pageImage.addEventListener("mousedown", (e) => {
       if (!isPaused) return;
       e.preventDefault();
 
       if (e.button === 0) {
+        // left click => next page
         page = (page % 604) + 1;
       } else if (e.button === 2) {
+        // right click => previous page
         page = (page - 2 + 604) % 604 + 1;
       }
 
@@ -286,7 +334,7 @@
       playPage();
     });
 
-    pageImage.addEventListener('contextmenu', e => e.preventDefault());
+    pageImage.addEventListener("contextmenu", (e) => e.preventDefault());
 
     window.onload = function () {
       loadPageFromCookie();
