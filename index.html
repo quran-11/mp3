@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Quran Player - Multi Reciters</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=msjirZhHfwaQlLz3D15OKFt84LFdZqWpy6lXdayG46YIOiMrqhsO39q8vjCYkFxdbZQbFAbdlrqoZHVbA6MoBQ" charset="UTF-8"></script><style>
+  <style>
     body {
       display: flex;
       flex-direction: column;
@@ -102,7 +101,7 @@
   <div class="controls-row">
     <label for="reciter-select">Reciter:</label>
     <select id="reciter-select">
-      <option value="naser">naser-alqattami</option>
+     <option value="naser">naser-alqattami</option>
       <option value="hussary">AL hussary</option>
      
       <option value="afasy">Mishary Alafasy</option>
@@ -339,12 +338,7 @@
     pageImage.addEventListener("contextmenu", (e) => e.preventDefault());
 
     window.onload = function () {
-     loadPageFromCookie();
-      page = parseInt(document.getElementById("start-page").value) || 1;
-      const pageStr = pad3(page);
-      const imageUrl = "https://ia801504.us.archive.org/24/items/606_20250214/" + pageStr + ".png";
-      pageImage.src = imageUrl;
-      
+      loadPageFromCookie();
     };
   </script>
 </body>
