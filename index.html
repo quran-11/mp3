@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Quran Player - Multi Reciters</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=lKJ_-fkO0jxfrme1BcQh5nxLUMbAZmDHW8Y4MBBG_hXtLFMlXzXQYTwYJuKZl95WNjkccFtF0GrXeXWHcjVmtw" charset="UTF-8"></script><style>
     body {
       display: flex;
       flex-direction: column;
@@ -119,6 +120,11 @@
 
     <label for="repeat-count">Repeats:</label>
     <input type="number" id="repeat-count" value="1" min="1" />
+
+     <label>
+      <input type="checkbox" id="two-page-toggle" />
+      Show Two Pages
+    </label>
   </div>
 
   <div class="button-row">
@@ -131,14 +137,19 @@
   <p id="total-time">Total play time: 00:00:00</p>
 
   <audio id="quran-audio" controls></audio><br />
-  <img id="page-image" alt="Quran Page" src="" />
+
+  <div id="page-container">
+    <img id="left-page" src="" alt="Left Page" style="display:none" />
+    <img id="right-page" src="" alt="Right Page" />
+  </div>
 
   <script>
     const audio = document.getElementById("quran-audio");
     const status = document.getElementById("status");
     const countdown = document.getElementById("countdown");
     const totalTimeDisplay = document.getElementById("total-time");
-    const pageImage = document.getElementById("page-image");
+    const leftPage = document.getElementById("left-page");
+    const rightPage = document.getElementById("right-page");
     const pauseBtn = document.getElementById("pause-btn");
     const reciterSelect = document.getElementById("reciter-select");
 
@@ -154,7 +165,6 @@
     let useAudioEndMode = false;
     let totalSecondsPlayed = 0;
 
-    // Base URLs for each reciter
     const reciters = {
        khalifa:
         "https://ia801807.us.archive.org/24/items/x40814xxxxxxxxxxxxx/",
@@ -172,17 +182,45 @@
         "https://ia801409.us.archive.org/27/items/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/"
     };
 
+    function pad(n) {
+      return n.toString().padStart(3, "0");
+    }
+
+    function formatTime(sec) {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
+
+    function updateCountdown() {
+      if (!isPaused && !useAudioEndMode) {
+        if (timeLeft > 0) timeLeft--;
+        countdown.textContent = "Next play in: " + formatTime(timeLeft);
+      } else if (useAudioEndMode) {
+        countdown.textContent = "Next play after audio ends";
+      } else {
+        countdown.textContent = "--:--";
+      }
+    }
+
+    function updateTotalTime() {
+      if (!isPaused && !audio.paused) {
+        totalSecondsPlayed++;
+        totalTimeDisplay.textContent = "Total play time: " + formatTime(totalSecondsPlayed);
+      }
+    }
+
     function setCookie(name, value, days) {
       const d = new Date();
       d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-      const expires = "expires=" + d.toUTCString();
-      document.cookie = name + "=" + value + ";" + expires + ";path=/";
+      document.cookie = name + "=" + value + ";expires=" + d.toUTCString() + ";path=/";
     }
 
     function getCookie(name) {
       const cname = name + "=";
-      const decodedCookie = decodeURIComponent(document.cookie);
-      const ca = decodedCookie.split(";");
+      const decoded = decodeURIComponent(document.cookie);
+      const ca = decoded.split(";");
       for (let c of ca) {
         while (c.charAt(0) === " ") c = c.substring(1);
         if (c.indexOf(cname) === 0) return c.substring(cname.length, c.length);
@@ -202,70 +240,44 @@
         page = storedPage;
         document.getElementById("start-page").value = storedPage;
       }
-      if (storedReciter && reciters.hasOwnProperty(storedReciter)) {
+      if (storedReciter && reciters[storedReciter]) {
         reciterSelect.value = storedReciter;
       }
     }
 
-    function pad(num) {
-      return num.toString().padStart(2, "0");
-    }
-
-    function pad3(num) {
-      return num.toString().padStart(3, "0");
-    }
-
-    function formatTime(seconds) {
-      const h = Math.floor(seconds / 3600);
-      const m = Math.floor((seconds % 3600) / 60);
-      const s = seconds % 60;
-      return `${pad(h)}:${pad(m)}:${pad(s)}`;
-    }
-
-    function updateCountdown() {
-      if (!isPaused && !useAudioEndMode) {
-        if (timeLeft > 0) {
-          timeLeft--;
-        }
-        countdown.textContent = "Next play in: " + formatTime(timeLeft);
-      } else if (useAudioEndMode) {
-        countdown.textContent = "Next play after audio ends";
-      } else {
-        countdown.textContent = "--:--";
-      }
-    }
-
-    function updateTotalTime() {
-      if (!isPaused && !audio.paused) {
-        totalSecondsPlayed++;
-        totalTimeDisplay.textContent = "Total play time: " + formatTime(totalSecondsPlayed);
-      }
-    }
-
     function playPage() {
-      const pageStr = pad3(page);
       const reciter = reciterSelect.value;
-      let audioUrl;
+      const twoPage = document.getElementById("two-page-toggle").checked;
 
-      if (reciter === "mustafa") {
-        audioUrl = reciters[reciter] + pageStr + ".mp3";
-      } else {
-        // For others, files are named like 001.mp3, 002.mp3 etc
-        audioUrl = reciters[reciter] + pageStr + ".mp3";
-      }
-
-      const imageUrl =
-        "https://ia801504.us.archive.org/24/items/606_20250214/" + pageStr + ".png";
-
-      audio.src = audioUrl;
+      const pageStr = pad(page);
+      audio.src = reciters[reciter] + pageStr + ".mp3";
       audio.load();
+      if (!isPaused) audio.play();
 
-      if (!isPaused) {
-        audio.play();
+      if (twoPage) {
+        let left, right;
+        if (page % 2 === 0) {
+          left = page;
+          right = page - 1;
+        } else {
+          right = page;
+          left = page + 1;
+        }
+
+        if (left > 604) left = 604;
+        if (right > 604) right = 604;
+
+        leftPage.src = `https://ia801504.us.archive.org/24/items/606_20250214/${pad(left)}.png`;
+        rightPage.src = `https://ia801504.us.archive.org/24/items/606_20250214/${pad(right)}.png`;
+
+        leftPage.style.display = "inline";
+        rightPage.style.display = "inline";
+      } else {
+        rightPage.src = `https://ia801504.us.archive.org/24/items/606_20250214/${pad(page)}.png`;
+        leftPage.style.display = "none";
+        rightPage.style.display = "inline";
       }
 
-      pageImage.src = imageUrl;
-      pageImage.alt = `Quran Page ${page}`;
       status.textContent = `Status: Playing page ${page}, repetition ${currentRepeat + 1} of ${repeatCount}, Reciter: ${reciterSelect.options[reciterSelect.selectedIndex].text}`;
       savePageToCookie();
 
@@ -278,7 +290,7 @@
           }
           playPage();
         };
-      } else if (!useAudioEndMode) {
+      } else {
         currentRepeat++;
         if (currentRepeat >= repeatCount) {
           page = (page % 604) + 1;
@@ -304,7 +316,6 @@
       useAudioEndMode = intervalMinutes === 3;
 
       playPage();
-
       countdownTimer = setInterval(updateCountdown, 1000);
       totalTimeTimer = setInterval(updateTotalTime, 1000);
 
@@ -317,16 +328,12 @@
     function togglePause() {
       isPaused = !isPaused;
       pauseBtn.textContent = isPaused ? "Resume" : "Pause";
-
-      if (isPaused) {
-        audio.pause();
-      } else {
-        audio.play();
-      }
+      if (isPaused) audio.pause();
+      else audio.play();
     }
 
-    pageImage.addEventListener("mousedown", (e) => {
-      if (!isPaused) return;
+  leftPage.addEventListener("mousedown", (e) => {
+   if (!isPaused) return;
       e.preventDefault();
 
       if (e.button === 0) {
@@ -334,18 +341,63 @@
         page = (page % 604) + 1;
       } else if (e.button === 2) {
         // right click => previous page
-        page = (page - 2 + 604) % 604 + 1;
+        page = page = page - 2 ;
+      }
+      document.getElementById("start-page").value = page ; 
+      currentRepeat = 0;
+      playPage();
+});
+
+rightPage.addEventListener("mousedown", (e) => {
+   if (!isPaused) return;
+      e.preventDefault();
+
+      if (e.button === 0) {
+        // left click => next page
+        page = (page % 604) + 1;
+      } else if (e.button === 2) {
+        // right click => previous page
+        page = page - 2 ;
       }
 
       currentRepeat = 0;
+       document.getElementById("start-page").value = page ;    
       playPage();
-    });
+});
+    // Disable context menu on image right click
 
-    pageImage.addEventListener("contextmenu", (e) => e.preventDefault());
+    leftPage.addEventListener("contextmenu", (e) => e.preventDefault());
+    rightPage.addEventListener("contextmenu", (e) => e.preventDefault());
 
-    window.onload = function () {
+    window.onload = () => {
       loadPageFromCookie();
     };
+
+
+let touchStartX = 0;
+let touchEndX = 0;
+
+function handleSwipe(elem) {
+  elem.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+
+  elem.addEventListener("touchend", (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    if (!isPaused) return;
+
+    const diff = touchEndX - touchStartX;
+    if (Math.abs(diff) < 30) return; // small movement = no action
+
+    if (diff < 0) {
+      // swipe left => next page
+      goToNextPage();
+    } else {
+      // swipe right => previous page
+      goToPreviousPage();
+    }
+  });
+}
   </script>
 </body>
 </html>
