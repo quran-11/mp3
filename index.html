@@ -173,7 +173,7 @@
 
     const reciters = {
        yaser:
-        "https://ia600801.us.archive.org/27/items/355_20230226zzzz/",
+        "https://archive.org/download/355_20230226zzzz/",
        maher:
         "https://everyayah.com/data/Maher_AlMuaiqly_64kbps/PageMp3s/Page",
        khalefa:
@@ -185,7 +185,7 @@
       hussarym:
         "https://everyayah.com/data/Husary_128kbps_Mujawwad/PageMp3s/Page",
            naser:
-        "https://ia802901.us.archive.org/16/items/604___part-quran-128kb-high-quality-604-part-by-naser-alqattami--mp3/",
+        "https://archive.org/download/604___part-quran-128kb-high-quality-604-part-by-naser-alqattami--mp3/",
       afasy:
         "https://everyayah.com/data/Alafasy_128kbps/PageMp3s/Page",
       minshawi:
@@ -193,7 +193,7 @@
        minshawiMOrat:
         "https://everyayah.com/data/Minshawy_Murattal_128kbps/PageMp3s/Page",
       mustafa:
-        "https://ia801409.us.archive.org/27/items/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/"
+        "https://archive.org/download/quran-604--part-safa7aat-quran-32kb-high-quality-604-part-by-mostafa-esma3il-m/"
     };
 
     function pad(n) {
@@ -281,13 +281,13 @@
         if (left > 604) left = 604;
         if (right > 604) right = 604;
 
-        leftPage.src = `https://ia801504.us.archive.org/24/items/606_20250214/${pad(left)}.png`;
-        rightPage.src = `https://ia801504.us.archive.org/24/items/606_20250214/${pad(right)}.png`;
+        leftPage.src = `https://archive.org/download/606_20250214/${pad(left)}.png`;
+        rightPage.src = `https://archive.org/download/606_20250214/${pad(right)}.png`;
 
         leftPage.style.display = "inline";
         rightPage.style.display = "inline";
       } else {
-        rightPage.src = `https://ia801504.us.archive.org/24/items/606_20250214/${pad(page)}.png`;
+        rightPage.src = `https://archive.org/download/606_20250214/${pad(page)}.png`;
         leftPage.style.display = "none";
         rightPage.style.display = "inline";
       }
